@@ -1,0 +1,8 @@
+[package]
+name = "strand"
+description = "A Zincati lock backend for stateful workloads."
+version = "0.1.0"
+edition = "2021"
+authors = ["Nikhil Jha <njha@ocf.berkeley.edu>"]
+
+[dependencies]
