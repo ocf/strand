@@ -11,6 +11,8 @@ k8s-openapi = { version = "0.16.0", features = ["v1_25", "schemars"] }
 tracing = { version = "0.1.37", features = ["async-await"] }
 tokio = { version = "1.21.2", features = ["full"] }
 thiserror = "1.0.37"
+serde_json = "1.0.87"
+async-trait = "0.1.58"
 
 [lib]
 name = "strand"
