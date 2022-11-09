@@ -6,3 +6,15 @@ edition = "2021"
 authors = ["Nikhil Jha <njha@ocf.berkeley.edu>"]
 
 [dependencies]
+kube = { version = "0.76.0", features = ["runtime", "derive"] }
+k8s-openapi = { version = "0.16.0", features = ["v1_25", "schemars"] }
+tracing = { version = "0.1.37", features = ["async-await"] }
+tokio = { version = "1.21.2", features = ["full"] }
+thiserror = "1.0.37"
+
+[lib]
+name = "strand"
+
+[[bin]]
+name = "strand"
+path = "src/main.rs"

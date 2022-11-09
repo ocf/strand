@@ -15,13 +15,13 @@ Failures may cause actions in any given stage to get run multiple times. They ar
 The currently supported strategies, each split up into these three parts, are as follows.
 
 - Kubernetes
-    - Pre-reboot: drain + cordon the node
-    - Post-reboot: wait for `node.status.conditions[type="Ready"].status == "True"`
-    - Timeout: no action taken
+  - Pre-reboot: drain + cordon the node
+  - Post-reboot: wait for `node.status.conditions[type="Ready"].status == "True"`
+  - Timeout: no action taken
 - Ceph
-    - Pre-reboot: wait for cluster_status == Healthy, set `noout` on OSDs that are about to be `down`
-    - Post-reboot: wait for OSDs `up`, unset `noout`, wait for cluster_status == Healthy
-    - Timeout: unset `noout` (causing data replication)
+  - Pre-reboot: wait for cluster_status == Healthy, set `noout` on OSDs that are about to be `down`
+  - Post-reboot: wait for OSDs `up`, unset `noout`, wait for cluster_status == Healthy
+  - Timeout: unset `noout` (causing data replication)
 
 In the future, it might be a good idea to allow waiting for arbitrary Prometheus metrics as part of a strategy.
 
@@ -32,11 +32,11 @@ Strand employs a Kubernetes-native locking design. It depends on the [sequential
 To obtain the lock...
 
 1. Get the `Lease` object you've configured. If it doesn't exist, create it.
-    a. If some other node holds the lease, fail.
-    b. If you hold the lease, goto 3.
-2. If no node holds the lease, update the lease object with your Node ID.
-    a. If another node raced you and updated it first, the api server will reject the update, since the object version does not match. Fail.
-3. Run the post-reboot actions, return success.
+    - If some other node holds the lease, fail.
+    - If you hold the lease, goto 3.
+1. If no node holds the lease, update the lease object with your Node ID.
+    - If another node raced you and updated it first, the api server will reject the update, since the object version does not match. Fail.
+1. Run the post-reboot actions, return success.
 
 ## Metrics and Logs
 
@@ -47,4 +47,3 @@ Logs might be interesting for debugging issues if the alarm gets hit. Strand mak
 ## Similar Software
 
 Strand is inspired by [poseidon/fleetlock](https://github.com/poseidon/fleetlock). We really like typhoon but it isn't really for running pet Kubernetes clusters (the author suggests blue/greening your entire Kubernetes cluster if you want to update, which is reasonable for some groups). We need to run Ceph, and also we don't have enough hardware to blue/green an entire deployment, so a little more care with locking is neccesary. If you aren't running Ceph, go check out that project!
-
