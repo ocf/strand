@@ -1,10 +1,12 @@
 use std::time::Duration;
 
-pub mod kubernetes;
+use crate::fleetlock;
+
 pub mod ceph;
+pub mod kubernetes;
 
 #[async_trait::async_trait]
-trait Strategy {
+pub trait Strategy {
     async fn pre_reboot(&self) -> Result<(), crate::Error>;
     async fn post_reboot(&self) -> Result<(), crate::Error>;
     async fn timeout(&self) -> Result<(), crate::Error>;
@@ -19,7 +21,15 @@ trait Strategy {
     fn priority(&self) -> Priority;
 }
 
-struct Priority {
-    pub pre: usize,
-    pub post: usize,
+pub struct Priority {
+    pub pre: u64,
+    pub post: u64,
+}
+
+pub async fn init_strategies(
+    req: &fleetlock::Request,
+) -> Result<Vec<Box<impl Strategy>>, crate::Error> {
+    Ok(vec![Box::new(
+        kubernetes::Kubernetes::new(req.client_params.id.clone()).await?,
+    )])
 }

@@ -2,18 +2,16 @@ use std::time::Duration;
 
 use k8s_openapi::api::core::v1::Node;
 use k8s_openapi::api::core::v1::Pod;
-use kube::ResourceExt;
 use kube::api::EvictParams;
 use kube::api::ListParams;
-use kube::api::Patch;
-use kube::api::PatchParams;
 use kube::Api;
 use kube::Client;
+use kube::ResourceExt;
 
 use crate::strategies::Priority;
 use crate::strategies::Strategy;
 
-struct Kubernetes {
+pub struct Kubernetes {
     node: String,
     client: Client,
 }
@@ -36,13 +34,23 @@ impl Strategy for Kubernetes {
 
         // evict pods
         let pod_api: Api<Pod> = Api::all(self.client.clone());
-        let pods = pod_api.list(&ListParams::default().fields(&format!("spec.nodeName={}", &self.node))).await?;
+        let pods = pod_api
+            .list(&ListParams::default().fields(&format!("spec.nodeName={}", &self.node)))
+            .await?;
         for pod in pods {
-            let is_daemonset_managed = pod.owner_references().iter().any(|x| x.kind.eq("DaemonSet"));
+            let is_daemonset_managed = pod
+                .owner_references()
+                .iter()
+                .any(|x| x.kind.eq("DaemonSet"));
             if !is_daemonset_managed {
-                let status = pod_api.evict(&pod.name_any(), &EvictParams::default()).await?;
+                let status = pod_api
+                    .evict(&pod.name_any(), &EvictParams::default())
+                    .await?;
                 if status.is_failure() {
-                    return Err(crate::Error::Value(format!("failed to evict {}", pod.name_any())));
+                    return Err(crate::Error::Value(format!(
+                        "failed to evict {}",
+                        pod.name_any()
+                    )));
                 }
             }
         }
@@ -54,7 +62,7 @@ impl Strategy for Kubernetes {
         let node_api: Api<Node> = Api::all(self.client.clone());
         node_api.uncordon(&self.node).await?;
 
-        todo!()
+        Ok(())
     }
 
     async fn timeout(&self) -> Result<(), crate::Error> {
@@ -72,8 +80,8 @@ impl Strategy for Kubernetes {
 
     fn priority(&self) -> Priority {
         Priority {
-            pre: 100,
-            post: 300,
+            pre: 300,
+            post: 100,
         }
     }
 }

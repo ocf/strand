@@ -35,7 +35,7 @@ async fn lock_test() {
     lock.release(client.clone(), "alice").await.unwrap();
     let res = lock.release(client.clone(), "alice").await;
     assert!(res.is_err());
-    
+
     // Freeing when someone else holds the lock...
 
     lock.acquire(client.clone(), "alice").await.unwrap();

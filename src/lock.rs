@@ -2,13 +2,15 @@ use std::collections::BTreeMap;
 
 use k8s_openapi::api::coordination::v1::{Lease, LeaseSpec};
 use kube::{
-    api::{DeleteParams, PostParams, Patch, PatchParams},
+    api::{DeleteParams, Patch, PatchParams, PostParams},
     core::ObjectMeta,
     Api, Client,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::Error;
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Lock {
     pub name: String,
     pub namespace: String,
@@ -30,7 +32,7 @@ impl Lock {
         holder: &str,
     ) -> Result<Lease, kube::Error> {
         // try to get the lease if it already exists
-        let lease_api: Api<Lease> = Api::default_namespaced(client);
+        let lease_api: Api<Lease> = Api::namespaced(client, &self.namespace);
         let mut lease: Result<Lease, kube::Error> = self.get_lease(lease_api.clone()).await;
 
         // the desired lease
@@ -74,7 +76,7 @@ impl Lock {
             .ok_or(Error::Value("Lease has no holder_identity".into()))?;
 
         if !current_holder.eq(holder.as_ref()) {
-            return Err(Error::Held(current_holder));
+            return Err(Error::Lock(current_holder));
         }
 
         Ok(())
@@ -85,7 +87,7 @@ impl Lock {
         client: Client,
         holder: impl AsRef<str>,
     ) -> Result<(), crate::Error> {
-        let lease_api: Api<Lease> = Api::default_namespaced(client);
+        let lease_api: Api<Lease> = Api::namespaced(client, &self.namespace);
         let lease = self.get_lease(lease_api.clone()).await?;
 
         let current_holder = lease
@@ -95,7 +97,7 @@ impl Lock {
             .ok_or(Error::Value("Lease has no holder_identity".into()))?;
 
         if !current_holder.eq(holder.as_ref()) {
-            return Err(Error::Held(current_holder));
+            return Err(Error::Lock(current_holder));
         }
 
         lease_api
@@ -105,7 +107,7 @@ impl Lock {
     }
 
     pub async fn get_metadata(&self, client: Client) -> Result<LockMetadata, crate::Error> {
-        let api: Api<Lease> = Api::default_namespaced(client);
+        let api: Api<Lease> = Api::namespaced(client, &self.namespace);
         let lease = self.get_lease(api).await?;
 
         let current_holder = lease
@@ -132,8 +134,12 @@ impl Lock {
         })
     }
 
-    pub async fn set_metadata(&self, client: Client, meta: &LockMetadata) -> Result<(), crate::Error> {
-        let api: Api<Lease> = Api::default_namespaced(client.clone());
+    pub async fn set_metadata(
+        &self,
+        client: Client,
+        meta: &LockMetadata,
+    ) -> Result<(), crate::Error> {
+        let api: Api<Lease> = Api::namespaced(client.clone(), &self.namespace);
         let cur_meta = self.get_metadata(client).await?;
 
         if cur_meta.holder.ne(&meta.holder) {
@@ -147,13 +153,14 @@ impl Lock {
                 }
             }
         }));
-        api.patch(&self.name, &PatchParams::default(), &patch).await?;
+        api.patch(&self.name, &PatchParams::default(), &patch)
+            .await?;
 
         Ok(())
     }
 
     pub async fn force_release(&self, client: Client) -> Result<(), crate::Error> {
-        let lease_api: Api<Lease> = Api::default_namespaced(client);
+        let lease_api: Api<Lease> = Api::namespaced(client, &self.namespace);
         lease_api
             .delete(&self.name, &DeleteParams::default())
             .await?;
