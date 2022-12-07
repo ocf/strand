@@ -1,3 +1,5 @@
+This repository is deprecated. We realized CoreOS is probably not a good fit for us. The repository will be kept up on the off chance that this is useful to someone else.
+
 # strand
 
 A [Zincati](https://coreos.github.io/zincati/) (Fedora CoreOS) reboot lock backend that makes sure the software running on your nodes is actually healthy before releasing the lock. This is useful because it allows you to run stateful workloads (like Ceph) on CoreOS, and take advantage of auto-updates.
